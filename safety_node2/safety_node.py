@@ -6,6 +6,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
 from ackermann_msgs.msg import AckermannDriveStamped
 from std_srvs.srv import Trigger
 from std_msgs.msg import Float32  # For publishing velocity, TTC, and distance for PlotJuggler
@@ -17,7 +18,7 @@ class SafetyNode(Node):
     """
     def __init__(self):
         super().__init__('safety_node')
-        self.speed = 0. # why 0.? why not 0.0 or 0
+        self.speed = 0.
         self.ttc_cutoff = 1.8  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
         self.ttc = 10000.
@@ -36,6 +37,7 @@ class SafetyNode(Node):
         self.create_subscription(LaserScan, 'scan', self.scan_callback, qos)
         self.create_subscription(Odometry, 'odom', self.odom_callback, qos)
         self.create_subscription(AckermannDriveStamped, 'drive_in', self.drive_callback, qos)
+        self.create_subscription(Twist, 'cmd_vel', self.drive_callback_twist, qos)
 
         # Service for resetting the safety mechanism
         self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
@@ -73,7 +75,14 @@ class SafetyNode(Node):
         # Apply brake if necessary and publish drive command
         if self.brake:
             drive_msg.drive.speed = 0.
-        self.drive_publisher.publish(drive_msg)
+        self.drive_publisher_ackerman.publish(drive_msg)
+
+    def drive_callback_twist(self, drive_msg: Twist):
+        if self.brake:
+            drive_msg.linear.x = 0.
+        response = AckermannDriveStamped()
+        response.drive.speed = drive_msg.linear.x
+        self.drive_publisher_ackerman.publish(response)
 
     def reset_safety_callback(self, request, response):
         # Reset safety mechanism based on TTC

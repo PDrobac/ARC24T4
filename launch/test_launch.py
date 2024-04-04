@@ -5,6 +5,6 @@ def generate_launch_description():
     return launch.LaunchDescription([
         launch_ros.actions.Node(
             package='safety_node2',
-            executable='talker',
-            name='talker'),
+            executable='safety_node.py',
+            name='safety_node'),
   ])
