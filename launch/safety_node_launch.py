@@ -88,6 +88,7 @@ def generate_launch_description():
         name="safety_node",
         remappings=[
             ("/drive_out", "/drive"),
+            ("/odom", "/ego_racecar/odom")
             #("/drive_in", "/drive"),
             #("/teleop_twist_keyboard_out", "/teleop_twist_keyboard"),
             #("/teleop_twist_keyboard_in", "/teleop_twist_keyboard")
