@@ -21,7 +21,7 @@ class SafetyNode(Node):
         self.speed = 0.
         self.ttc_cutoff = 1.8  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
-        self.ttc = 10000.
+        self.ttc = 10.
 
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
@@ -29,6 +29,7 @@ class SafetyNode(Node):
         self.velocity_publisher = self.create_publisher(Float32, '/velocity', 10)
         self.ttc_publisher = self.create_publisher(Float32, '/ttc', 10)
         self.distance_publisher = self.create_publisher(Float32, '/min_distance', 10)
+        self.brake_publisher = self.create_publisher(Float32, '/brake', 10)
         # Publisher for spherical marker
         self.marker_publisher = self.create_publisher(Marker, '/visualization_marker', 10)
 
@@ -70,7 +71,12 @@ class SafetyNode(Node):
             if ttc < self.ttc:
                 self.ttc = ttc
 
+        brake = 0.
+        if self.brake:
+            brake = 1.
+
         self.ttc_publisher.publish(Float32(data=self.ttc))
+        self.brake_publisher.publish(Float32(data=brake))
 
     def drive_callback_ackerman(self, drive_msg: AckermannDriveStamped):
         # Apply brake if necessary and publish drive command
