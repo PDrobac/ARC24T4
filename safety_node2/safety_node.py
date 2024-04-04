@@ -66,6 +66,8 @@ class SafetyNode(Node):
             angle = math.atan2(math.sin(angle), math.cos(angle))
             relative_speed = self.speed * math.cos(angle)
             ttc = distance / max(abs(relative_speed), 1e-5)  # Avoid /0
+
+            self.ttc_cutoff = self.get_parameter('ttc_cutoff').get_parameter_value().double_value
             if ttc < self.ttc_cutoff:
                 self.brake = True
             if ttc < self.ttc:

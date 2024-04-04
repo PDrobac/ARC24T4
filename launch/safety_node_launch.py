@@ -86,6 +86,7 @@ def generate_launch_description():
         package="safety_node2",
         executable="safety_node",
         name="safety_node",
+        parameters=[{'ttc_cutoff': 1.8}],
         remappings=[
             ("/drive_out", "/drive"),
             ("/odom", "/ego_racecar/odom")
@@ -93,6 +94,11 @@ def generate_launch_description():
             #("/teleop_twist_keyboard_out", "/teleop_twist_keyboard"),
             #("/teleop_twist_keyboard_in", "/teleop_twist_keyboard")
         ]
+    )
+    reconfig = Node(
+        package='rqt_reconfigure',
+        executable='rqt_reconfigure',
+        output='screen'
     )
 
     # finalize
@@ -102,6 +108,7 @@ def generate_launch_description():
     ld.add_action(map_server_node)
     ld.add_action(ego_robot_publisher)
     ld.add_action(safety_node)
+    ld.add_action(reconfig)
     if has_opp:
         ld.add_action(opp_robot_publisher)
 
