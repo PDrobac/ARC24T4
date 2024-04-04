@@ -8,6 +8,7 @@ import numpy as np
 # TODO: include needed ROS msg type headers and libraries
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
 from ackermann_msgs.msg import AckermannDriveStamped, AckermannDrive
 from std_srvs.srv import Trigger
 
@@ -35,7 +36,8 @@ class SafetyNode(Node):
 
         self.brake = False
         self.ttc = 10000.
-        self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
+        self.drive_publisher_ackerman = self.create_publisher(AckermannDriveStamped, '/drive_out', 10)
+        #self.drive_publisher_twist = self.create_publisher(Twist, '/teleop_twist_keyboard_out', 10)
         
         self.create_subscription(
             LaserScan,                      # Message type
@@ -54,7 +56,14 @@ class SafetyNode(Node):
         self.create_subscription(
             AckermannDriveStamped,          # Message type
             'drive_in',                    # Topic name
-            self.drive_callback,          # Callback function
+            self.drive_callback_ackerman,          # Callback function
+            qos_profile=rclpy.qos.qos_profile_sensor_data
+        )
+    
+        self.create_subscription(
+            Twist,
+            'cmd_vel',
+            self.drive_callback_twist,
             qos_profile=rclpy.qos.qos_profile_sensor_data
         )
 
@@ -80,18 +89,22 @@ class SafetyNode(Node):
                 ttc = range_measurement / abs(relative_speed)
 
             if not self.brake and ttc < self.ttc_cutoff:
-                print("Range " + str(range_measurement))
-                print("Relative_speed: " + str(relative_speed))
-                print("Angle: " + str(angle))
                 self.brake = True
 
             if ttc < self.ttc:
                 self.ttc = ttc
 
-    def drive_callback(self, drive_msg: AckermannDriveStamped):
+    def drive_callback_ackerman(self, drive_msg: AckermannDriveStamped):
         if self.brake:
             drive_msg.drive.speed = 0.
-        self.drive_publisher.publish(drive_msg)
+        self.drive_publisher_ackerman.publish(drive_msg)
+
+    def drive_callback_twist(self, drive_msg: Twist):
+        if self.brake:
+            drive_msg.linear.x = 0.
+        response = AckermannDriveStamped()
+        response.drive.speed = drive_msg.linear.x
+        self.drive_publisher_ackerman.publish(response)
 
     def reset_safety_callback(self, request: Trigger.Request, response: Trigger.Response):
         if self.ttc < self.ttc_cutoff:

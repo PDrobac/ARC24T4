@@ -83,8 +83,15 @@ def generate_launch_description():
         remappings=[('/robot_description', 'opp_robot_description')]
     )
     safety_node = Node(
-        package='safety_node2',
-        executable='safety_node'
+        package="safety_node2",
+        executable="safety_node",
+        name="safety_node",
+        remappings=[
+            ("/drive_out", "/drive"),
+            #("/drive_in", "/drive"),
+            #("/teleop_twist_keyboard_out", "/teleop_twist_keyboard"),
+            #("/teleop_twist_keyboard_in", "/teleop_twist_keyboard")
+        ]
     )
 
     # finalize
