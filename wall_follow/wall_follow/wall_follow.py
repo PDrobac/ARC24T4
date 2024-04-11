@@ -22,9 +22,12 @@ class WallFollow(Node):
         self.kp = 1
         self.ki = 0
         self.kd = 0
-        self.curr_angle = 0 # current steering angle
+        
+        self.cur_angle = 0 # current steering angle
         self.des_angle = 0 # desired steering angle
         self.acc_error = 0 # accumulated steering error
+        
+        self.cur_speed = 0 # desired drive speed
         self.des_speed = 0 # desired drive speed
         
         timer_period = 0.5  # seconds - for a periodic callback
@@ -47,7 +50,7 @@ class WallFollow(Node):
         self.get_logger().debug('Wall follow Inited')
         
     def pid(self, des_angle, dt):
-        err = self.curr_angle - des_angle
+        err = self.cur_angle - des_angle
         prop = self.kp * err
         self.acc_error += self.ki * err * dt
         integ = self.acc_error
@@ -64,7 +67,8 @@ class WallFollow(Node):
 
     def odom_callback(self, odom_msg: Odometry):
         # get current steering angle
-        pass
+        self.cur_speed = Odometry.twist.twist.linear.x # current velocity of the car
+        self.cur_angle = Odometry.twist.twist.angular.z # current turn angle of the car
     
     def scan_callback(self, scan_msg: LaserScan):
         # calculate optimal steering angle AND speed
