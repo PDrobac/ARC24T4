@@ -89,7 +89,8 @@ def generate_launch_description():
         parameters=[{'ttc_cutoff': 1.8}],
         remappings=[
             ("/drive_out", "/drive"),
-            ("/odom", "/ego_racecar/odom")
+            ("/odom", "/ego_racecar/odom"),
+            ("/base_link", "/ego_racecar/base_link")
             #("/drive_in", "/drive"),
             #("/teleop_twist_keyboard_out", "/teleop_twist_keyboard"),
             #("/teleop_twist_keyboard_in", "/teleop_twist_keyboard")

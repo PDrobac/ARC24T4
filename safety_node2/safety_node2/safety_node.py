@@ -47,7 +47,7 @@ class SafetyNode(Node):
         self.declare_parameter('ttc_cutoff', 1.8)
 
         # Timer to periodically update the marker
-        self.create_timer(0.1, self.update_marker) # not sure if 0.1 is the right value
+        self.create_marker()
 
     def odom_callback(self, odom_msg: Odometry):
         # Update current speed and publish for visualization
@@ -105,23 +105,29 @@ class SafetyNode(Node):
             response.message = "Safety reset successful"
         return response
 
-    def update_marker(self):
+    def create_marker(self):
         # Update and publish spherical marker based on brake status, has to be tested, might not work as expected
-        marker = Marker()
-        marker.header.frame_id = "base_link" 
-        marker.type = marker.SPHERE
-        marker.action = marker.ADD
+        self.marker = Marker()
+        self.marker.header.stamp = self.get_clock().now().to_msg()
+        self.marker.ns = "basic_shapes"
+        self.marker.id = 0
+        self.marker.type = Marker.SPHERE
+        self.marker.action = Marker.ADD
         # Marker position should be in front of the car
-        marker.scale.x = 0.2
-        marker.scale.y = 0.2
-        marker.scale.z = 0.2
+        self.marker.scale.x = 0.2
+        self.marker.scale.y = 0.2
+        self.marker.scale.z = 0.2
         # Marker color should be red if braking, green if not
-        marker.color.a = 1.0
-        marker.color.r = 1.0 if self.brake else 0.0
-        marker.color.g = 0.0
-        marker.color.b = 0.0 if self.brake else 1.0
-        marker.pose.orientation.w = 1.0
-        self.marker_publisher.publish(marker)
+        self.marker.color.a = 1.0
+        self.marker.color.b = 0.0
+        self.marker.pose.orientation.w = 1.0
+        self.timer = self.create_timer(0.1, self.publish_marker)
+
+    def publish_marker(self):
+        self.marker.header.frame_id = 'map'
+        self.marker.color.r = 1.0 if self.brake else 0.0
+        self.marker.color.g = 0.0 if self.brake else 1.0
+        self.marker_publisher.publish(self.marker)
 
 def main(args=None):
     rclpy.init(args=args)
