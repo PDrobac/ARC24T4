@@ -24,7 +24,9 @@ def generate_launch_description():
         package="wall_follow",
         executable="wall_follow",
         name="wall_follow",
-        # remappings=[]
+        remappings=[
+            ("/drive", "/drive_in")
+        ]
     )
     
     ld.add_action(import_f1tenth_launch)

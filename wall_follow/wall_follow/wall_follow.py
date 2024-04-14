@@ -18,65 +18,88 @@ class WallFollow(Node):
     """
     def __init__(self):
         super().__init__('wall_follow')
-        self.speed = 0.
-        self.kp = 1
+        self.kp = 10
         self.ki = 0
         self.kd = 0
-        
-        self.cur_angle = 0 # current steering angle
-        self.des_angle = 0 # desired steering angle
-        self.acc_error = 0 # accumulated steering error
-        
-        self.cur_speed = 0 # desired drive speed
-        self.des_speed = 0 # desired drive speed
-        
-        timer_period = 0.5  # seconds - for a periodic callback
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+
+        self.theta = 60. # angle between scans a and b
+        self.L = 1. # lookahead distance in front of car
+        self.D = 1. # desired distance from wall
+
+        self.prev_error = 0. # error in previous D step
+        self.integral = 0. # accumulated I error
         
         # Publishers
+        # TODO: change to /drive
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
         # Subscribers
         qos = QoSProfile(depth=10)
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos)
-        self.create_subscription(Odometry, '/ego_racecar/odom', self.odom_callback, qos)
         # # Service for resetting the safety mechanism
         # self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        self.declare_parameter('kp', 1)
-        self.declare_parameter('ki', 0)
-        self.declare_parameter('kd', 0)
-        self.declare_parameter('timer_period', 0.5)
+        # TODO
+        self.i = True
+        #self.declare_parameter('kp', 1)
+        #self.declare_parameter('ki', 0)
+        #self.declare_parameter('kd', 0)
+        #self.declare_parameter('timer_period', 0.5)
         self.get_logger().debug('Wall follow Inited')
-        
-    def pid(self, des_angle, dt):
-        err = self.cur_angle - des_angle
-        prop = self.kp * err
-        self.acc_error += self.ki * err * dt
-        integ = self.acc_error
-        deriv = self.kd * err / dt
-        return prop + integ + deriv
 
-    def timer_callback(self):
+    def pid(self, error):
+        # pre-PID calculations
+        self.integral += error
+        derivative = error - self.prev_error
+        self.prev_error = error
+
+        # result is steering angle as determined by PID
+        return self.kp * error + self.ki * self.integral + self.kd * derivative
+
+    def publish_drive(self, steering_angle, speed):
         drive_msg = AckermannDriveStamped()
-        drive_msg.drive.steering_angle = ((self.i % 3) - 1) * 0.2
-        drive_msg.drive.speed = 0.5
-        self.publisher_.publish(drive_msg)
-        self.get_logger().info('Publishing AckermannDriveStamped')
-        self.i += 1
-
-    def odom_callback(self, odom_msg: Odometry):
-        # get current steering angle
-        self.cur_speed = Odometry.twist.twist.linear.x # current velocity of the car
-        self.cur_angle = Odometry.twist.twist.angular.z # current turn angle of the car
+        drive_msg.drive.speed = speed
+        drive_msg.drive.steering_angle = steering_angle
+        self.drive_publisher.publish(drive_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
         # calculate optimal steering angle AND speed
-       pass
-   
-    def drive_callback_ackerman(self, drive_msg: AckermannDriveStamped):
-        # implement autonomous driving
-       pass
+
+        # laser measurement at 0 degrees
+        angle_b = math.radians(-90) - scan_msg.angle_min
+        index_b = int(angle_b / scan_msg.angle_increment)
+        b = scan_msg.ranges[index_b]
+        
+        # measurement at <theta> degrees
+        angle_a = angle_b + math.radians(self.theta)
+        index_a = int(angle_a / scan_msg.angle_increment)
+        a = scan_msg.ranges[index_a]
+
+        # offset
+        alpha = math.atan2(a * math.cos(math.radians(self.theta)) - b, a * math.sin(math.radians(self.theta))) # current angle
+        dist_curr = b * math.cos(alpha)
+        dist_fut = dist_curr + self.L * math.sin(alpha)
+        error = dist_fut - self.D # offset from desired distance
+        
+        # steering angle PID expressed in degrees
+        steering_angle = - math.degrees(self.pid(error))
+
+        if self.i:
+            print("Measurement at 0: " + str(b))
+            print("Measurement at 60: " + str(a))
+            print("Car angle: " + str(math.degrees(alpha)))
+            print("Offset: " + str(error))
+            print("Steering angle: " + str(steering_angle))
+            self.i = False
+
+        # determine desired speed
+        speed = 0.5
+        if abs(steering_angle) < 10:
+            speed = 1.5
+        elif abs(steering_angle) < 20:
+            speed = 1.
+
+        self.publish_drive(steering_angle, speed)
 
 def main(args=None):
     rclpy.init(args=args)
