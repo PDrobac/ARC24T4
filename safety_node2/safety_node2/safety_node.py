@@ -19,7 +19,7 @@ class SafetyNode(Node):
     def __init__(self):
         super().__init__('safety_node')
         self.speed = 0.
-        self.ttc_cutoff = 1.8  # Default TTC threshold, can be adjusted via rqt_reconfigure
+        self.ttc_cutoff = 0.18  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
         self.ttc = 10.
 
@@ -44,7 +44,7 @@ class SafetyNode(Node):
         self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        self.declare_parameter('ttc_cutoff', 1.8)
+        self.declare_parameter('ttc_cutoff', 0.18)
 
         # Timer to periodically update the marker
         self.create_marker()
