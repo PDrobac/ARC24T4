@@ -18,7 +18,7 @@ class WallFollow(Node):
     """
     def __init__(self):
         super().__init__('wall_follow')
-        self.kp = 10
+        self.kp = 1
         self.ki = 0
         self.kd = 0
 
@@ -39,12 +39,13 @@ class WallFollow(Node):
         # self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        # TODO
         self.i = True
-        #self.declare_parameter('kp', 1)
-        #self.declare_parameter('ki', 0)
-        #self.declare_parameter('kd', 0)
-        #self.declare_parameter('timer_period', 0.5)
+        self.declare_parameter('kp', 1)
+        self.declare_parameter('ki', 0)
+        self.declare_parameter('kd', 0)
+        #self.declare_parameter('theta', 60.)
+        #self.declare_parameter('L', 1.)
+        #self.declare_parameter('D', 1.)
         self.get_logger().debug('Wall follow Inited')
 
     def pid(self, error):
@@ -52,6 +53,13 @@ class WallFollow(Node):
         self.integral += error
         derivative = error - self.prev_error
         self.prev_error = error
+
+        # re-check parameters
+        #self.kp = self.get_parameter('kp').get_parameter_value().double_value
+        #self.ki = self.get_parameter('ki').get_parameter_value().double_value
+        #self.kd = self.get_parameter('kd').get_parameter_value().double_value
+
+        #print("Kp: " + str(self.kp))
 
         # result is steering angle as determined by PID
         return self.kp * error + self.ki * self.integral + self.kd * derivative
