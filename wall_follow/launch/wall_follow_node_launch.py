@@ -25,9 +25,13 @@ def generate_launch_description():
         executable="wall_follow",
         name="wall_follow",
         parameters=[
-            {'kp': 1},
-            {'ki': 0},
-            {'kd': 0}
+            {'kp': 0.008},
+            {'ki': 0.},
+            {'kd': 0.01},
+            {'theta': 40.},
+            {'L': 1.5},
+            {'v_max': 3.5},
+            {'v_max_angle': 10.}
             ],
         remappings=[
             ("/drive", "/drive_in")

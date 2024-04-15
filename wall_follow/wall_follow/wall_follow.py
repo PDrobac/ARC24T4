@@ -23,14 +23,15 @@ class WallFollow(Node):
         self.kd = 0
 
         self.theta = 60. # angle between scans a and b
-        self.L = 1. # lookahead distance in front of car
+        self.L = 3. # lookahead distance in front of car
         self.D = 1. # desired distance from wall
+        self.v_max = 3.
+        self.v_max_angle = 1.
 
         self.prev_error = 0. # error in previous D step
         self.integral = 0. # accumulated I error
         
         # Publishers
-        # TODO: change to /drive
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
         # Subscribers
         qos = QoSProfile(depth=10)
@@ -39,12 +40,14 @@ class WallFollow(Node):
         # self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        self.i = True
-        self.declare_parameter('kp', 1)
-        self.declare_parameter('ki', 0)
-        self.declare_parameter('kd', 0)
-        #self.declare_parameter('theta', 60.)
-        #self.declare_parameter('L', 1.)
+        #self.i = True
+        self.declare_parameter('kp', 1.)
+        self.declare_parameter('ki', 0.)
+        self.declare_parameter('kd', 0.)
+        self.declare_parameter('theta', 30.)
+        self.declare_parameter('L', 3.)
+        self.declare_parameter('v_max', 3.)
+        self.declare_parameter('v_max_angle', 1.)
         #self.declare_parameter('D', 1.)
         self.get_logger().debug('Wall follow Inited')
 
@@ -55,9 +58,9 @@ class WallFollow(Node):
         self.prev_error = error
 
         # re-check parameters
-        #self.kp = self.get_parameter('kp').get_parameter_value().double_value
-        #self.ki = self.get_parameter('ki').get_parameter_value().double_value
-        #self.kd = self.get_parameter('kd').get_parameter_value().double_value
+        self.kp = self.get_parameter('kp').get_parameter_value().double_value
+        self.ki = self.get_parameter('ki').get_parameter_value().double_value
+        self.kd = self.get_parameter('kd').get_parameter_value().double_value
 
         #print("Kp: " + str(self.kp))
 
@@ -72,6 +75,10 @@ class WallFollow(Node):
     
     def scan_callback(self, scan_msg: LaserScan):
         # calculate optimal steering angle AND speed
+        self.L = self.get_parameter('L').get_parameter_value().double_value
+        self.theta = self.get_parameter('theta').get_parameter_value().double_value
+        self.v_max = self.get_parameter('v_max').get_parameter_value().double_value
+        self.v_max_angle = self.get_parameter('v_max_angle').get_parameter_value().double_value
 
         # laser measurement at 0 degrees
         angle_b = math.radians(-90) - scan_msg.angle_min
@@ -92,17 +99,19 @@ class WallFollow(Node):
         # steering angle PID expressed in degrees
         steering_angle = - math.degrees(self.pid(error))
 
-        if self.i:
-            print("Measurement at 0: " + str(b))
-            print("Measurement at 60: " + str(a))
-            print("Car angle: " + str(math.degrees(alpha)))
-            print("Offset: " + str(error))
-            print("Steering angle: " + str(steering_angle))
-            self.i = False
+        #if self.i:
+        #    print("Measurement at 0: " + str(b))
+        #    print("Measurement at 60: " + str(a))
+        #    print("Car angle: " + str(math.degrees(alpha)))
+        #    print("Offset: " + str(error))
+        #    print("Steering angle: " + str(steering_angle))
+        #    self.i = False
 
         # determine desired speed
         speed = 0.5
-        if abs(steering_angle) < 10:
+        if abs(steering_angle) < self.v_max_angle:
+            speed = self.v_max
+        elif abs(steering_angle) < 10:
             speed = 1.5
         elif abs(steering_angle) < 20:
             speed = 1.
