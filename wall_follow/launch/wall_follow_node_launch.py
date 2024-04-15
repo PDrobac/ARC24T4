@@ -11,6 +11,8 @@ from launch_ros.actions import SetRemap
 
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
+analyzer_params_filepath = '/arc2024/ws/src/your_code/ARC24T4/wall_follow/launch/diagnostics_aggregator_config.yaml'
+
 def generate_launch_description():
     ld = LaunchDescription()
     
