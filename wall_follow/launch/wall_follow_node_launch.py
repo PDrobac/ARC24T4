@@ -1,3 +1,5 @@
+import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -10,15 +12,24 @@ from launch.actions import (
 from launch_ros.actions import SetRemap
 
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from ament_index_python.packages import get_package_share_directory
 
-analyzer_params_filepath = '/arc2024/ws/src/your_code/ARC24T4/wall_follow/launch/diagnostics_aggregator_config.yaml'
+workspace_prefix = os.environ['WS_PREFIX']
+
+# analyzer_params_filepath = workspace_prefix + '/src/your_code/ARC24T4/wall_follow/config/diagnostics_aggregator_config.yaml'
 
 def generate_launch_description():
     ld = LaunchDescription()
     
+    analyzer_params_filepath = os.path.join(
+        get_package_share_directory('wall_follow'),
+        'config',
+        'diagnostics_aggregator_config.yaml'
+    )
+    
     import_f1tenth_launch = GroupAction([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("/arc2024/ws/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
+            PythonLaunchDescriptionSource(workspace_prefix + "/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
         )
     ])
     

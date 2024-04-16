@@ -40,13 +40,13 @@ class WallFollow(Node):
         # self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        #self.i = True
-        self.declare_parameter('kp', 1.)
+        self.i = True
+        self.declare_parameter('kp', 0.006)
         self.declare_parameter('ki', 0.)
-        self.declare_parameter('kd', 0.)
-        self.declare_parameter('theta', 30.)
+        self.declare_parameter('kd', 0.03)
+        self.declare_parameter('theta', 54.)
         self.declare_parameter('L', 3.)
-        self.declare_parameter('v_max', 3.)
+        self.declare_parameter('v_max', 1.5)
         self.declare_parameter('v_max_angle', 1.)
         #self.declare_parameter('D', 1.)
         self.get_logger().debug('Wall follow Inited')
@@ -99,12 +99,12 @@ class WallFollow(Node):
         # steering angle PID expressed in degrees
         steering_angle = - math.degrees(self.pid(error))
 
-        #if self.i:
-        #    print("Measurement at 0: " + str(b))
-        #    print("Measurement at 60: " + str(a))
-        #    print("Car angle: " + str(math.degrees(alpha)))
-        #    print("Offset: " + str(error))
-        #    print("Steering angle: " + str(steering_angle))
+        if self.i:
+            print("Measurement at 0: " + str(b))
+            print("Measurement at 60: " + str(a))
+            print("Car angle: " + str(math.degrees(alpha)))
+            print("Offset: " + str(error))
+            print("Steering angle: " + str(steering_angle))
         #    self.i = False
 
         # determine desired speed
