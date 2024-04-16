@@ -8,6 +8,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from ackermann_msgs.msg import AckermannDriveStamped
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from std_srvs.srv import Trigger
 from std_msgs.msg import Float32  # For publishing velocity, TTC, and distance for PlotJuggler
 from visualization_msgs.msg import Marker  # For creating and updating the spherical marker
@@ -31,6 +32,8 @@ class SafetyNode(Node):
         self.brake_publisher = self.create_publisher(Float32, '/brake', 10)
         # Publisher for spherical marker
         self.marker_publisher = self.create_publisher(Marker, '/visualization_marker', 10)
+        self.timer = self.create_timer(1, self.publish_diagnostic)
+        self.diagnostic_publisher = self.create_publisher(DiagnosticArray, '/diagnostics', 10)
 
         # Subscribers
         qos = QoSProfile(depth=10)
@@ -47,6 +50,24 @@ class SafetyNode(Node):
 
         # Timer to periodically update the marker
         self.create_marker()
+
+    def publish_diagnostic(self):
+        msg = DiagnosticArray()
+        msg.header.stamp = self.get_clock().now().to_msg()
+
+        # Create DiagnosticStatus message for the emergency brake
+        brake_status = DiagnosticStatus()
+        brake_status.name = "Emergency Brake"
+        brake_status.level = DiagnosticStatus.WARN if self.brake else DiagnosticStatus.OK
+        brake_status.message = "Emergency Brake is engaged" if self.brake else "Emergency Brake is disengaged"
+        
+        # Additional diagnostic information if needed
+        # brake_status.values.append(KeyValue(key="Voltage", value="12V"))
+
+        msg.status.append(brake_status)
+
+        self.diagnostic_publisher.publish(msg)
+        self.get_logger().info("Published diagnostic message")
 
     def odom_callback(self, odom_msg: Odometry):
         # Update current speed and publish for visualization
