@@ -18,7 +18,7 @@ def generate_launch_description():
     
     import_f1tenth_launch = GroupAction([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("/arc2024/ws/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
+            PythonLaunchDescriptionSource("/home/pero/sim_ws/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
         )
     ])
     
@@ -27,13 +27,13 @@ def generate_launch_description():
         executable="wall_follow",
         name="wall_follow",
         parameters=[
-            {'kp': 0.008},
+            {'kp': 0.006},
             {'ki': 0.},
             {'kd': 0.01},
-            {'theta': 40.},
-            {'L': 1.5},
+            {'theta': 52.},
+            {'L': 2.5},
             {'v_max': 3.5},
-            {'v_max_angle': 10.}
+            {'v_max_angle': 0.1}
             ],
         remappings=[
             ("/drive", "/drive_in")

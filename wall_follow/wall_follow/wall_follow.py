@@ -18,21 +18,24 @@ class WallFollow(Node):
     """
     def __init__(self):
         super().__init__('wall_follow')
-        self.kp = 1
-        self.ki = 0
-        self.kd = 0
+        self.kp = 0.006
+        self.ki = 0.
+        self.kd = 0.01
 
-        self.theta = 60. # angle between scans a and b
-        self.L = 3. # lookahead distance in front of car
+        self.theta = 52. # angle between scans a and b
+        self.L = 2.5 # lookahead distance in front of car
         self.D = 1. # desired distance from wall
-        self.v_max = 3.
-        self.v_max_angle = 1.
+        self.v_max = 3.5
+        self.v_max_angle = 0.1
 
         self.prev_error = 0. # error in previous D step
         self.integral = 0. # accumulated I error
         
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
+        self.d_publisher = self.create_publisher(Float32, '/data/d', 10)
+        self.angle_publisher = self.create_publisher(Float32, '/data/angle', 10)
+        self.speed_publisher = self.create_publisher(Float32, '/data/speed', 10)
         # Subscribers
         qos = QoSProfile(depth=10)
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos)
@@ -41,13 +44,13 @@ class WallFollow(Node):
 
         # Declare parameter for dynamic reconfiguration
         #self.i = True
-        self.declare_parameter('kp', 1.)
+        self.declare_parameter('kp', 0.006)
         self.declare_parameter('ki', 0.)
-        self.declare_parameter('kd', 0.)
-        self.declare_parameter('theta', 30.)
+        self.declare_parameter('kd', 0.03)
+        self.declare_parameter('theta', 54.)
         self.declare_parameter('L', 3.)
-        self.declare_parameter('v_max', 3.)
-        self.declare_parameter('v_max_angle', 1.)
+        self.declare_parameter('v_max', 4.)
+        self.declare_parameter('v_max_angle', 0.11)
         #self.declare_parameter('D', 1.)
         self.get_logger().debug('Wall follow Inited')
 
@@ -72,6 +75,11 @@ class WallFollow(Node):
         drive_msg.drive.speed = speed
         drive_msg.drive.steering_angle = steering_angle
         self.drive_publisher.publish(drive_msg)
+
+    def publish_data(self, dist_fut, steering_angle, speed):
+        self.d_publisher.publish(Float32(data=dist_fut))
+        self.angle_publisher.publish(Float32(data=steering_angle))
+        self.speed_publisher.publish(Float32(data=speed))
     
     def scan_callback(self, scan_msg: LaserScan):
         # calculate optimal steering angle AND speed
@@ -111,12 +119,13 @@ class WallFollow(Node):
         speed = 0.5
         if abs(steering_angle) < self.v_max_angle:
             speed = self.v_max
-        elif abs(steering_angle) < 10:
+        elif abs(steering_angle) < 1:
             speed = 1.5
-        elif abs(steering_angle) < 20:
+        elif abs(steering_angle) < 10:
             speed = 1.
 
         self.publish_drive(steering_angle, speed)
+        self.publish_data(dist_fut, steering_angle, speed)
 
 def main(args=None):
     rclpy.init(args=args)

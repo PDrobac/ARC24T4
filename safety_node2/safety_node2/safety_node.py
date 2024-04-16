@@ -21,7 +21,6 @@ class SafetyNode(Node):
         self.speed = 0.
         self.ttc_cutoff = 2  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
-        self.ttc = 10.
 
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
@@ -58,6 +57,7 @@ class SafetyNode(Node):
         # Calculate TTC and determine whether to brake, also publish distance and TTC for visualization
         min_distance = min(scan_msg.ranges)
         self.distance_publisher.publish(Float32(data=min_distance))
+        self.ttc = 10.
 
         for i, distance in enumerate(scan_msg.ranges):
             if distance == 0:  # Ignore invalid readings
