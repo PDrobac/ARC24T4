@@ -26,7 +26,7 @@ subscriptions:
 
 # Optionally, you can configure topic remappings here:
 # topic_renames:
-#   - original: "/LaserScan"
-#     remapped: "/robot1/LaserScan"
-#   - original: "/Odometry"
-#     remapped: "/robot1/Odometry"
+  # - original: "/scan"
+  #   remapped: "/car/LaserScan"
+  # - original: "/ego_racecar/odom"
+  #   remapped: "/car/Odometry"
