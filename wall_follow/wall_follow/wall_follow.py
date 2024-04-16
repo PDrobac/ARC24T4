@@ -9,7 +9,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 from ackermann_msgs.msg import AckermannDriveStamped
 from std_srvs.srv import Trigger
-from std_msgs.msg import Float32  # For publishing velocity, TTC, and distance for PlotJuggler
+from std_msgs.msg import Float32, String  # For publishing velocity, TTC, and distance for PlotJuggler
 from visualization_msgs.msg import Marker  # For creating and updating the spherical marker
 
 class WallFollow(Node):
@@ -30,12 +30,16 @@ class WallFollow(Node):
 
         self.prev_error = 0. # error in previous D step
         self.integral = 0. # accumulated I error
+        self.prev_b = 100. # wall distance in previous step
+        self.wall_lost = False
         
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
         self.d_publisher = self.create_publisher(Float32, '/data/d', 10)
         self.angle_publisher = self.create_publisher(Float32, '/data/angle', 10)
         self.speed_publisher = self.create_publisher(Float32, '/data/speed', 10)
+        self.error_publisher = self.create_publisher(Float32, '/data/error', 10)
+        self.w_error_publisher = self.create_publisher(String, '/wall_lost_error', 10)
         # Subscribers
         qos = QoSProfile(depth=10)
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos)
@@ -53,6 +57,7 @@ class WallFollow(Node):
         self.declare_parameter('v_max_angle', 0.11)
         #self.declare_parameter('D', 1.)
         self.get_logger().debug('Wall follow Inited')
+        self.timer = self.create_timer(1, self.timer_callback)
 
     def pid(self, error):
         # pre-PID calculations
@@ -80,6 +85,9 @@ class WallFollow(Node):
         self.d_publisher.publish(Float32(data=dist_fut))
         self.angle_publisher.publish(Float32(data=steering_angle))
         self.speed_publisher.publish(Float32(data=speed))
+
+    def timer_callback(self):
+        self.error_publisher.publish(Float32(data=self.prev_error))
     
     def scan_callback(self, scan_msg: LaserScan):
         # calculate optimal steering angle AND speed
@@ -103,6 +111,15 @@ class WallFollow(Node):
         dist_curr = b * math.cos(alpha)
         dist_fut = dist_curr + self.L * math.sin(alpha)
         error = dist_fut - self.D # offset from desired distance
+
+        # wall loss check
+        if not self.wall_lost and b > 2 * self.prev_b:
+            self.w_error_publisher.publish(String(data="LOST"))
+            self.wall_lost = True
+        elif self.wall_lost and b < 2 * self.D:
+            self.w_error_publisher.publish(String(data="OKAY"))
+            self.wall_lost = False
+        self.prev_b = b
         
         # steering angle PID expressed in degrees
         steering_angle = - math.degrees(self.pid(error))
