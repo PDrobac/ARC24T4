@@ -19,7 +19,7 @@ class SafetyNode(Node):
     def __init__(self):
         super().__init__('safety_node')
         self.speed = 0.
-        self.ttc_cutoff = 0.18  # Default TTC threshold, can be adjusted via rqt_reconfigure
+        self.ttc_cutoff = 2  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
         self.ttc = 10.
 
@@ -44,7 +44,7 @@ class SafetyNode(Node):
         self.create_service(Trigger, 'reset_safety_node', self.reset_safety_callback)
 
         # Declare parameter for dynamic reconfiguration
-        self.declare_parameter('ttc_cutoff', 0.18)
+        self.declare_parameter('ttc_cutoff', 1.)
 
         # Timer to periodically update the marker
         self.create_marker()
@@ -63,9 +63,10 @@ class SafetyNode(Node):
             if distance == 0:  # Ignore invalid readings
                 continue
             angle = scan_msg.angle_min + i * scan_msg.angle_increment
-            angle = math.atan2(math.sin(angle), math.cos(angle))
-            relative_speed = self.speed * math.cos(angle)
-            ttc = distance / max(abs(relative_speed), 1e-5)  # Avoid /0
+            if abs(angle) > math.radians(5):
+                continue
+            relative_speed = self.speed * math.cos(angle)**2
+            ttc = distance / max(relative_speed, 1e-5)  # Avoid /0
 
             self.ttc_cutoff = self.get_parameter('ttc_cutoff').get_parameter_value().double_value
             if ttc < self.ttc_cutoff:

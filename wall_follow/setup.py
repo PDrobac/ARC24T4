@@ -26,7 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'wall_follow = wall_follow.wall_follow:main'
+            'wall_follow = wall_follow.wall_follow:main',
+            'slow_crash = slow_crash.slow_crash:main',
         ],
     },
 )

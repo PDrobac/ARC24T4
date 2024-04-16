@@ -86,7 +86,7 @@ def generate_launch_description():
         package="safety_node2",
         executable="safety_node",
         name="safety_node",
-        parameters=[{'ttc_cutoff': 0.18}],
+        parameters=[{'ttc_cutoff': 1.5}],
         remappings=[
             ("/drive_out", "/drive"),
             ("/odom", "/ego_racecar/odom"),
