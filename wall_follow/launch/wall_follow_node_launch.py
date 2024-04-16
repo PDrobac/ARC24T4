@@ -47,7 +47,17 @@ def generate_launch_description():
         parameters=[analyzer_params_filepath]
     )
     
+    rqt_robot_monitor = Node(
+        package='rqt_gui',
+        executable='rqt_gui',
+        name='rqt_gui',
+        output='screen',
+        parameters=[{'args': '-s rqt_robot_monitor'}]
+    )
+    
     ld.add_action(import_f1tenth_launch)
     ld.add_action(wall_follow)
     ld.add_action(aggregator)
+    ld.add_action(rqt_robot_monitor)
+    
     return ld

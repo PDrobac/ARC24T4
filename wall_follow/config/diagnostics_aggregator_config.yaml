@@ -15,14 +15,11 @@ publishers:
     remap: false  # If true, remap topics according to the 'topic_renames' section
     prefix: "Car"  # Prefix to prepend to the names of aggregated diagnostic messages
     analyzers:
-      - LaserScanAnalyzer
-      - OdometryAnalyzer
+      - DiagnosticsAnalyzer
 
 subscriptions:
-  - topic: "/scan"
-    analyzer: "LaserScanAnalyzer"
-  - topic: "/ego_racecar/odom"
-    analyzer: "OdometryAnalyzer"
+  - topic: "/diagnostics"
+    analyzer: "DiagnosticsAnalyzer"
 
 # Optionally, you can configure topic remappings here:
 # topic_renames:
