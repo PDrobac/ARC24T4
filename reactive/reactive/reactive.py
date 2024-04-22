@@ -45,7 +45,7 @@ class Reactive(Node):
         speed = 0.5
         steering_angle = 0
         # implement follow the gap algo
-        # obtain laser scans, preprocess
+        # obtain laser scans, process
         rng_proc = scan_msg.ranges
         # find closes point
         min_rng = min(rng_proc)
@@ -60,8 +60,25 @@ class Reactive(Node):
             rng_proc[right_idx] = 0
         
         # find the max length gap
+        gap_len_max = 0
+        gap_len_cur = 0
+        gap_idx_start = -1
+        for i in range(0, rng_proc.len(), 1):
+            if rng_proc[i] == 0:
+                continue
+            i += 1
+            while ((rng_proc[i] != 0) and (i < rng_proc.len())):
+                gap_len_cur += 1
+                i += 1
+            if gap_len_cur > gap_len_max:
+                gap_idx_start = i-gap_len_cur
+                gap_len_max = gap_len_cur
         
+        gap = rng_proc[gap_idx_start:gap_idx_start+gap_len_max]
+            
+            
                 
+            
         
         
         self.publish_drive(steering_angle, speed)
