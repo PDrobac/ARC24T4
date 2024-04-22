@@ -20,10 +20,3 @@ publishers:
 subscriptions:
   - topic: "/diagnostics"
     analyzer: "DiagnosticsAnalyzer"
-
-# Optionally, you can configure topic remappings here:
-# topic_renames:
-  # - original: "/scan"
-  #   remapped: "/car/LaserScan"
-  # - original: "/ego_racecar/odom"
-  #   remapped: "/car/Odometry"
