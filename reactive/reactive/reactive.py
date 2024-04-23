@@ -17,6 +17,7 @@ class Reactive(Node):
     """
     def __init__(self):
         super().__init__('reactive')
+        self.declare_parameter('max_velocity', 3.)
         
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
@@ -70,7 +71,7 @@ class Reactive(Node):
         masked_out_ranges = deepcopy(ranges)
         #find disparities
         disparity_TH = 0.35     # I hope its in meters
-        car_safety_bbl = 0.5    # I really hope its meters
+        car_safety_bbl = 0.3    # I really hope its meters
         
         for idx, rng in enumerate(ranges):
             
@@ -97,14 +98,14 @@ class Reactive(Node):
                             masked_out_ranges[i] = rng
                         
                         
-        max_masked_out = max(masked_out_ranges) #find max value
+        max_masked_out = max(masked_out_ranges[200:-200]) #find max value
         idx_direction = masked_out_ranges.index(max_masked_out)
                         
         steering_angle = scan_msg.angle_min + (idx_direction/(len(masked_out_ranges)-1))*(scan_msg.angle_max - scan_msg.angle_min) #go in direction of max value
         
         #print(steering_angle)
 
-        speed = 10/(1+math.pow(2, -(max_masked_out-5)/2))
+        speed = self.get_parameter('max_velocity').get_parameter_value().double_value/(1+math.pow(2, -((max_masked_out)-5)/2))
 
         self.publish_drive(steering_angle, speed)
         self.publish_marker(steering_angle, speed)
