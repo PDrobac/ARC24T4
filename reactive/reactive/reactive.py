@@ -50,30 +50,29 @@ class Reactive(Node):
         marker.pose.orientation = quaternion  # No rotation
         self.marker_pub.publish(marker)
     
-    def publish_scan(self, scan_msg: LaserScan):
+    def publish_scan(self, scan_msg: LaserScan, masked_out_ranges: list):
         new_scan_msg = deepcopy(scan_msg)
+        new_scan_msg.ranges = masked_out_ranges
         for i, distance in enumerate(scan_msg.ranges):
             if distance < 1.0:
                 new_scan_msg.intensities.append(0.0)
             else:
                 new_scan_msg.intensities.append(0.05)
-                if distance > 2.0:
-                    new_scan_msg.ranges[i] = 2.0
+                #if distance > 2.0:
+                    #new_scan_msg.ranges[i] = 10.0
 
         self.scan_pub.publish(new_scan_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
-        self.publish_marker()
-        self.publish_scan(scan_msg)
         ## DISPARITY EXTENDER
-        speed = 0.5
-        steering_angle = 0.
+        speed = 5.0
+        steering_angle = 0.0
         #get ranges
-        ranges = scan_msg.ranges
-        masked_out_ranges = ranges
+        ranges = deepcopy(scan_msg.ranges)
+        masked_out_ranges = deepcopy(ranges)
         #find disparities
         disparity_TH = 0.35     # I hope its in meters
-        car_safety_bbl = 1    # I really hope its meters
+        car_safety_bbl = 0.5    # I really hope its meters
         
         for idx, rng in enumerate(ranges):
             
@@ -107,9 +106,9 @@ class Reactive(Node):
         
         print(steering_angle)
 
-        self.publish_drive(steering_angle, 0.5)
-         
-        
+        self.publish_drive(steering_angle, speed)
+        self.publish_marker(steering_angle, speed)
+        self.publish_scan(scan_msg, masked_out_ranges)
         
         ## FIND THE GAP
         
