@@ -5,13 +5,11 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
 from ackermann_msgs.msg import AckermannDriveStamped
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
-from std_srvs.srv import Trigger
-from std_msgs.msg import Float32  # For publishing velocity, TTC, and distance for PlotJuggler
+from geometry_msgs.msg import Point, Vector3, Quaternion
+from std_msgs.msg import ColorRGBA
 from visualization_msgs.msg import Marker  # For creating and updating the spherical marker
+from copy import deepcopy
 
 class Reactive(Node):
     """
@@ -23,12 +21,7 @@ class Reactive(Node):
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
         self.marker_pub = self.create_publisher(Marker, '/viz_marker', 10)
-        self.marker_pub0 = self.create_publisher(Marker, '/viz_marker0', 10)
-        self.marker_pub1 = self.create_publisher(Marker, '/viz_marker1', 10)
-        self.marker_pub2 = self.create_publisher(Marker, '/viz_marker2', 10)
-        self.marker_pub3 = self.create_publisher(Marker, '/viz_marker3', 10)
-        self.marker_pub4 = self.create_publisher(Marker, '/viz_marker4', 10)
-        self.marker_scan = self.create_publisher(LaserScan, '/viz_scan', 10)
+        self.scan_pub = self.create_publisher(LaserScan, '/viz_scan', 10)
         
         # Subscribers
         qos = QoSProfile(depth=10)
@@ -39,9 +32,39 @@ class Reactive(Node):
         drive_msg.drive.speed = speed
         drive_msg.drive.steering_angle = steering_angle
         self.drive_publisher.publish(drive_msg)
+
+    def publish_marker(self, steering_angle=0.0, speed=1.0):
+        quaternion = Quaternion()
+        quaternion.x = 0.0
+        quaternion.y = 0.0
+        quaternion.z = math.sin(steering_angle / 2.0)
+        quaternion.w = math.cos(steering_angle / 2.0)
+
+        marker = Marker()
+        marker.header.frame_id = "ego_racecar/base_link"
+        marker.type = Marker.ARROW
+        marker.action = Marker.ADD
+        marker.scale = Vector3(x=speed, y=0.05, z=0.05)  # Width, height, depth
+        marker.color = ColorRGBA(r=1.0, g=0.0, b=0.0, a=1.0)  # Red color
+        marker.pose.position = Point(x=0.0, y=0.0, z=0.2)  # Position of the marker
+        marker.pose.orientation = quaternion  # No rotation
+        self.marker_pub.publish(marker)
+    
+    def publish_scan(self, scan_msg: LaserScan):
+        new_scan_msg = deepcopy(scan_msg)
+        for i, distance in enumerate(scan_msg.ranges):
+            if distance < 1.0:
+                new_scan_msg.intensities.append(0.0)
+            else:
+                new_scan_msg.intensities.append(0.05)
+                if distance > 2.0:
+                    new_scan_msg.ranges[i] = 2.0
+
+        self.scan_pub.publish(new_scan_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
-        
+        self.publish_marker()
+        self.publish_scan(scan_msg)
         ## DISPARITY EXTENDER
         speed = 0.5
         steering_angle = 0.
