@@ -78,7 +78,7 @@ class Reactive(Node):
             # to the right
             if idx < len(ranges)-1: #gives error for the last element
                 if (ranges[idx+1] - ranges[idx])>disparity_TH :  #checkes for disparities
-                    angle = 2 * math.asin((car_safety_bbl/2)/rng)   #calculates the angle for the safety bubble based on distance
+                    angle = 2 * math.asin((car_safety_bbl/2)/max(rng, car_safety_bbl/2))   #calculates the angle for the safety bubble based on distance
                     
                     mask_N = math.ceil(angle / scan_msg.angle_increment)    #calculates number of laser samples
                     
@@ -89,7 +89,7 @@ class Reactive(Node):
             # to the left
             if idx > 0: #gives error for first element
                 if (ranges[idx-1] - ranges[idx])>disparity_TH :
-                    angle = 2 * math.asin((car_safety_bbl/2)/rng)
+                    angle = 2 * math.asin((car_safety_bbl/2)/max(rng, car_safety_bbl/2))
                     
                     mask_N = math.ceil(angle / scan_msg.angle_increment)
                     
