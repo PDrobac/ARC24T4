@@ -54,12 +54,10 @@ class Reactive(Node):
         new_scan_msg = deepcopy(scan_msg)
         new_scan_msg.ranges = masked_out_ranges
         for i, distance in enumerate(scan_msg.ranges):
-            if distance < 1.0:
+            if distance != masked_out_ranges[i]:
                 new_scan_msg.intensities.append(0.0)
             else:
-                new_scan_msg.intensities.append(0.05)
-                #if distance > 2.0:
-                    #new_scan_msg.ranges[i] = 10.0
+                new_scan_msg.intensities.append(1.0)
 
         self.scan_pub.publish(new_scan_msg)
     
@@ -104,7 +102,9 @@ class Reactive(Node):
                         
         steering_angle = scan_msg.angle_min + (idx_direction/(len(masked_out_ranges)-1))*(scan_msg.angle_max - scan_msg.angle_min) #go in direction of max value
         
-        print(steering_angle)
+        #print(steering_angle)
+
+        speed = 10/(1+math.pow(2, -(max_masked_out-5)/2))
 
         self.publish_drive(steering_angle, speed)
         self.publish_marker(steering_angle, speed)
