@@ -1,3 +1,5 @@
+import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -11,12 +13,17 @@ from launch_ros.actions import SetRemap
 
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
+ws_path = os.environ["WS_PATH"]
+
 def generate_launch_description():
+    print(">>> Using Workspace path:", ws_path)
+    print("To export the current directory as WS_PATH, enter: > export WS_PATH=$(pwd) <")
+    
     ld = LaunchDescription()
     
-    import_f1tenth_launch = GroupAction([
+    import_launch = GroupAction([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("/home/pero/sim_ws/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
+            PythonLaunchDescriptionSource(ws_path + "/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
         )
     ])
     
@@ -30,7 +37,7 @@ def generate_launch_description():
         ]
     )
     
-    ld.add_action(import_f1tenth_launch)
+    ld.add_action(import_launch)
     ld.add_action(reactive)
     
     return ld

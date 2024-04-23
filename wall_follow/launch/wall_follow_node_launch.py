@@ -1,3 +1,5 @@
+import os
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -11,14 +13,16 @@ from launch_ros.actions import SetRemap
 
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
-analyzer_params_filepath = '/arc2024/ws/src/your_code/ARC24T4/wall_follow/config/diagnostics_aggregator_config.yaml'
+ws_path = os.environ["WS_PATH"]
+analyzer_params_filepath = ws_path + '/src/your_code/ARC24T4/wall_follow/config/diagnostics_aggregator_config.yaml'
 
 def generate_launch_description():
+    print(">>> Using Workspace path:", ws_path)
     ld = LaunchDescription()
     
-    import_f1tenth_launch = GroupAction([
+    import_launch = GroupAction([
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource("/home/pero/sim_ws/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
+            PythonLaunchDescriptionSource(ws_path + "/src/your_code/ARC24T4/safety_node2/launch/safety_node_launch.py")
         )
     ])
     
@@ -55,7 +59,7 @@ def generate_launch_description():
         parameters=[{'args': '-s rqt_robot_monitor'}]
     )
     
-    ld.add_action(import_f1tenth_launch)
+    ld.add_action(import_launch)
     ld.add_action(wall_follow)
     ld.add_action(aggregator)
     ld.add_action(rqt_robot_monitor)
