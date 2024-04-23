@@ -67,7 +67,8 @@ class SafetyNode(Node):
         msg.status.append(brake_status)
 
         self.diagnostic_publisher.publish(msg)
-        self.get_logger().info("Published diagnostic message")
+        msg_print = "Brake engaged" if self.brake else "Brake not engaged"
+        self.get_logger().info(msg_print)
 
     def odom_callback(self, odom_msg: Odometry):
         # Update current speed and publish for visualization
