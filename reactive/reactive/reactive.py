@@ -41,47 +41,91 @@ class Reactive(Node):
         self.drive_publisher.publish(drive_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
-        pass
+        
+        ## DISPARITY EXTENDER
         speed = 0.5
-        steering_angle = 0
-        # implement follow the gap algo
-        # obtain laser scans, process
-        rng_proc = scan_msg.ranges
-        # find closes point
-        min_rng = min(rng_proc)
-        idx = rng_proc.index(min_rng)
-        rng_proc[idx] = 0
+        steering_angle = 0.
+        #get ranges
+        ranges = scan_msg.ranges
+        masked_out_ranges = ranges
+        #find disparities
+        disparity_TH = 0.35     # I hope its in meters
+        car_safety_bbl = 1    # I really hope its meters
         
-        # draw a "safety bubble" around it
-        for i in range(1, 20, 1):
-            left_idx = idx-i
-            right_idx = idx+i
-            rng_proc[left_idx] = 0
-            rng_proc[right_idx] = 0
-        
-        # find the max length gap
-        gap_len_max = 0
-        gap_len_cur = 0
-        gap_idx_start = -1
-        for i in range(0, rng_proc.len(), 1):
-            if rng_proc[i] == 0:
-                continue
-            i += 1
-            while ((rng_proc[i] != 0) and (i < rng_proc.len())):
-                gap_len_cur += 1
-                i += 1
-            if gap_len_cur > gap_len_max:
-                gap_idx_start = i-gap_len_cur
-                gap_len_max = gap_len_cur
-        
-        gap = rng_proc[gap_idx_start:gap_idx_start+gap_len_max]
+        for idx, rng in enumerate(ranges):
             
-            
-                
-            
+            # to the right
+            if idx < len(ranges)-1: #gives error for the last element
+                if (ranges[idx+1] - ranges[idx])>disparity_TH :  #checkes for disparities
+                    angle = 2 * math.asin((car_safety_bbl/2)/rng)   #calculates the angle for the safety bubble based on distance
+                    
+                    mask_N = math.ceil(angle / scan_msg.angle_increment)    #calculates number of laser samples
+                    
+                    for i in range(idx, min(len(ranges)-1, idx + mask_N)):  #decreases the range to rng
+                        if masked_out_ranges[i] > rng:
+                            masked_out_ranges[i] = rng
+                        
+            # to the left
+            if idx > 0: #gives error for first element
+                if (ranges[idx-1] - ranges[idx])>disparity_TH :
+                    angle = 2 * math.asin((car_safety_bbl/2)/rng)
+                    
+                    mask_N = math.ceil(angle / scan_msg.angle_increment)
+                    
+                    for i in range(max(0, idx - mask_N), idx):
+                        if masked_out_ranges[i] > rng:
+                            masked_out_ranges[i] = rng
+                        
+                        
+        max_masked_out = max(masked_out_ranges) #find max value
+        idx_direction = masked_out_ranges.index(max_masked_out)
+                        
+        steering_angle = scan_msg.angle_min + (idx_direction/(len(masked_out_ranges)-1))*(scan_msg.angle_max - scan_msg.angle_min) #go in direction of max value
+        
+        print(steering_angle)
+
+        self.publish_drive(steering_angle, 0.5)
+         
         
         
-        self.publish_drive(steering_angle, speed)
+        ## FIND THE GAP
+        
+        # speed = 0.5
+        # steering_angle = 0
+        # # implement follow the gap algo
+        # # obtain laser scans, process
+        # rng_proc = scan_msg.ranges
+        # # find closes point
+        # min_rng = min(rng_proc)
+        # idx = rng_proc.index(min_rng)
+        # rng_proc[idx] = 0
+        
+        # safety_bbl_r = 20   #idx
+        # # draw a "safety bubble" around it
+        # for i in range(1, safety_bbl_r, 1):
+        #     left_idx = idx-i
+        #     right_idx = idx+i
+        #     rng_proc[left_idx] = 0
+        #     rng_proc[right_idx] = 0
+        
+        # # find the max length gap
+        # gap_len_max = 0
+        # gap_len_cur = 0
+        # gap_idx_start = -1
+        # for i in range(0, rng_proc.len(), 1):
+        #     if rng_proc[i] == 0:
+        #         continue
+        #     i += 1
+        #     while ((rng_proc[i] != 0) and (i < rng_proc.len())):
+        #         gap_len_cur += 1
+        #         i += 1
+        #     if gap_len_cur > gap_len_max:
+        #         gap_idx_start = i-gap_len_cur
+        #         gap_len_max = gap_len_cur
+        
+        # gap = rng_proc[gap_idx_start:gap_idx_start+gap_len_max]
+
+        # self.publish_drive(steering_angle, speed)
     
 def main(args=None):
     rclpy.init(args=args)
