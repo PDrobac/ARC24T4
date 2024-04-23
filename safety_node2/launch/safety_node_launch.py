@@ -40,7 +40,7 @@ workspace_prefix = os.environ['WS_PREFIX']
 def generate_launch_description():
     ld = LaunchDescription()
     
-    import_f1tenth_launch = GroupAction([
+    import_launch = GroupAction([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(workspace_prefix + "/src/f1tenth_system/f1tenth_stack/launch/bringup_launch.py")
         )
@@ -50,10 +50,10 @@ def generate_launch_description():
         package="safety_node2",
         executable="safety_node",
         name="safety_node",
-        parameters=[{'ttc_cutoff': 1.5}],
+        parameters=[{'ttc_cutoff': 0.7}],
         remappings=[
             ("/drive_out", "/drive"),
-            ("/odom", "/ego_racecar/odom"),
+            #("/odom", "/ego_racecar/odom"),
             ("/base_link", "/ego_racecar/base_link")
             #("/drive_in", "/drive"),
             #("/teleop_twist_keyboard_out", "/teleop_twist_keyboard"),
@@ -62,6 +62,7 @@ def generate_launch_description():
     )
 
     # finalize
+    ld.add_action(import_launch)
     ld.add_action(safety_node)
 
     return ld

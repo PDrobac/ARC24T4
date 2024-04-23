@@ -27,7 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'wall_follow = wall_follow.wall_follow:main',
-            'slow_crash = slow_crash.slow_crash:main',
+            'slow_crash = slow_crash.slow_crash:main'
         ],
     },
 )

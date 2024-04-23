@@ -1,32 +1,17 @@
 analyzers:
-  LaserScanAnalyzer:
-    type: "diagnostic_aggregator::FrequencyStatus"
-    period: 1.0  # Interval in seconds
-    window: 10   # Size of the sliding window
-
-  OdometryAnalyzer:
-    type: "diagnostic_aggregator::FrequencyStatus"
-    period: 1.0  # Interval in seconds
-    window: 10   # Size of the sliding window
-
-publishers:
-  /diagnostics_agg:
-    type: "diagnostic_aggregator::AggregatorNode"
-    remap: false  # If true, remap topics according to the 'topic_renames' section
-    prefix: "Car"  # Prefix to prepend to the names of aggregated diagnostic messages
+  sensors:
+    type: diagnostic_aggregator/SensorsAnalyzer
+    path: Sensors
     analyzers:
-      - LaserScanAnalyzer
-      - OdometryAnalyzer
-
-subscriptions:
-  - topic: "/scan"
-    analyzer: "LaserScanAnalyzer"
-  - topic: "/ego_racecar/odom"
-    analyzer: "OdometryAnalyzer"
-
-# Optionally, you can configure topic remappings here:
-# topic_renames:
-#   - original: "/LaserScan"
-#     remapped: "/robot1/LaserScan"
-#   - original: "/Odometry"
-#     remapped: "/robot1/Odometry"
+      imu:
+        type: diagnostic_aggregator/ImuAnalyzer
+        path: IMU
+        find_and_remove_prefix: imu_driver
+        num_items: 2
+        params:
+          name: 'imu topic status'
+          message: 'Frequency too low'
+      gps:
+        type: diagnostic_aggregator/GenericAnalyzer
+        path: GPS
+        find_and_remove_prefix: gps_driver

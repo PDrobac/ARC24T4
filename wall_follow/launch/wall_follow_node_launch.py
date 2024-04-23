@@ -59,5 +59,5 @@ def generate_launch_description():
     )
     
     ld.add_action(import_f1tenth_launch)
-    ld.add_action(wall_follow)
     return ld
+    ld.add_action(wall_follow)

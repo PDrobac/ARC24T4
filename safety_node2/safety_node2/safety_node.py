@@ -19,7 +19,7 @@ class SafetyNode(Node):
     def __init__(self):
         super().__init__('safety_node')
         self.speed = 0.
-        self.ttc_cutoff = 2  # Default TTC threshold, can be adjusted via rqt_reconfigure
+        self.ttc_cutoff = 1.  # Default TTC threshold, can be adjusted via rqt_reconfigure
         self.brake = False
         self.ttc = 10.
 
@@ -48,16 +48,19 @@ class SafetyNode(Node):
 
         # Timer to periodically update the marker
         self.create_marker()
+        self.get_logger().debug("safety_node inited")
 
     def odom_callback(self, odom_msg: Odometry):
         # Update current speed and publish for visualization
         self.speed = odom_msg.twist.twist.linear.x
+        self.ttc_publisher.publish(Float32(data=self.speed))
         self.velocity_publisher.publish(Float32(data=self.speed))
 
     def scan_callback(self, scan_msg: LaserScan):
         # Calculate TTC and determine whether to brake, also publish distance and TTC for visualization
         min_distance = min(scan_msg.ranges)
         self.distance_publisher.publish(Float32(data=min_distance))
+
 
         for i, distance in enumerate(scan_msg.ranges):
             if distance == 0:  # Ignore invalid readings
@@ -73,12 +76,12 @@ class SafetyNode(Node):
                 self.brake = True
             if ttc < self.ttc:
                 self.ttc = ttc
-
+	
         brake = 0.
         if self.brake:
             brake = 1.
 
-        self.ttc_publisher.publish(Float32(data=self.ttc))
+        #self.ttc_publisher.publish(Float32(data=self.ttc))
         self.brake_publisher.publish(Float32(data=brake))
 
     def drive_callback_ackerman(self, drive_msg: AckermannDriveStamped):

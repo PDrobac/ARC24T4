@@ -34,8 +34,7 @@ class SlowCrash(Node):
         self.drive_publisher.publish(drive_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
-
-        self.publish_drive(float(0), float(1))
+        self.publish_drive(float(0), float(0.5))
 
 def main(args=None):
     rclpy.init(args=args)
