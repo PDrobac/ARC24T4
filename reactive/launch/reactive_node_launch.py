@@ -29,8 +29,8 @@ def generate_launch_description():
     
     reactive = Node(
         package="reactive",
-        executable="reactive",
-        name="reactive",
+        executable="reactive_speed.py",
+        name="reactive_speed",
         parameters=[{'max_velocity': 3.0}],
         remappings=[
             ("/drive", "/drive_in")
