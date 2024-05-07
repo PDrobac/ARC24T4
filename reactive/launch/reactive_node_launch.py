@@ -31,7 +31,7 @@ def generate_launch_description():
         package="reactive",
         executable="reactive",
         name="reactive",
-        parameters=[{'max_velocity': 5.0}],
+        parameters=[{'max_velocity': 3.0}],
         remappings=[
             ("/drive", "/drive_in")
         ]
