@@ -36,8 +36,23 @@ def generate_launch_description():
             ("/drive", "/drive_in")
         ]
     )
+
+    # SLAM Toolbox node configuration
+    slam_toolbox = Node(
+        package='slam_toolbox',
+        executable='sync_slam_toolbox_node',  # Or async_slam_toolbox_node based on your requirements
+        name='slam_toolbox',
+        output='screen',
+        parameters=[{
+            'use_sim_time': False,  # Set to True if you are using simulation time e.g., with Gazebo
+            'map_frame': 'map',
+            'odom_frame': 'odom',
+            'base_frame': 'base_link'
+        }]
+    )
     
     ld.add_action(import_launch)
+    ld.add_action(slam_toolbox)
     ld.add_action(reactive)
     
     return ld

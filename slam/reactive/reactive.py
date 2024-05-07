@@ -9,6 +9,7 @@ from ackermann_msgs.msg import AckermannDriveStamped
 from geometry_msgs.msg import Point, Vector3, Quaternion
 from std_msgs.msg import ColorRGBA, Float32
 from visualization_msgs.msg import Marker  # For creating and updating the spherical marker
+from std_srvs.srv import Empty
 from copy import deepcopy
 
 class Reactive(Node):
@@ -18,6 +19,7 @@ class Reactive(Node):
     def __init__(self):
         super().__init__('reactive')
         self.declare_parameter('max_velocity', 3.)
+        self.save_map_service = self.create_client(Empty, 'save_map')
         
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
@@ -31,8 +33,14 @@ class Reactive(Node):
         #self.speed_pub_front = self.create_publisher(Float32, '/data/speed_front', 10)
         
         # Subscribers
-        qos = QoSProfile(depth=10)
+        # Subscriber for laser scan with high-quality QoS to ensure reliability with SLAM processing
+        qos = QoSProfile(depth=10, reliability=rclpy.qos.QoSReliabilityPolicy.RELIABLE)
         self.create_subscription(LaserScan, '/scan', self.scan_callback, qos)
+
+    
+        async def save_map(self):
+            await self.save_map_service.call_async(Empty.Request())
+        self.get_logger().info('Map saved!')
     
     def publish_drive(self, steering_angle, speed):
         drive_msg = AckermannDriveStamped()
@@ -69,6 +77,7 @@ class Reactive(Node):
         self.scan_pub.publish(new_scan_msg)
     
     def scan_callback(self, scan_msg: LaserScan):
+        self.original_scan_pub.publish(scan_msg)
         ## DISPARITY EXTENDER
         speed = 5.0
         steering_angle = 0.0
