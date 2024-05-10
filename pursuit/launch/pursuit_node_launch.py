@@ -31,10 +31,10 @@ def generate_launch_description():
         package="pursuit",
         executable="pursuit",
         name="pursuit",
-        parameters=[{'max_velocity': 3.0}],
-        remappings=[
-            ("/drive", "/drive_in")
-        ]
+        parameters=[
+            {'velocity': 1.0},
+            {'lookahead_distance': 1.0}
+            ]
     )
     
     ld.add_action(import_launch)
