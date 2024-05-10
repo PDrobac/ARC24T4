@@ -70,12 +70,16 @@ class Pursuit(Node):
                 visible_waypoints.append(waypoint)
                 if distance > furthest_distance:
                     furthest_waypoint = waypoint
+                    furthest_distance = distance
                     self.waypoint_index = self.path.index(waypoint)
 
-        # Calculate angle to furthest waypoint
-        angle_desired = math.atan2(furthest_waypoint.y - position.y, furthest_waypoint.x - position.x)
-        angle_current = odom_msg.pose.pose.orientation.z
-        steering_angle = angle_desired - angle_current
+        # TODO Calculate angle to furthest waypoint (think this is wrong)
+        # angle_desired = math.atan2(furthest_waypoint.y - position.y, furthest_waypoint.x - position.x)
+        # angle_current = odom_msg.pose.pose.orientation.z
+        # steering_angle = angle_desired - angle_current
+
+        # TODO Calculate angle to furthest waypoint (think this is right)
+        steering_angle = 2 * abs(furthest_waypoint.y - position.y) / (furthest_distance**2)
 
         # Log
         # TODO this task is unclear: do we need to log it in a logger or publish the values?
