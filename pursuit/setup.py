@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import find_packages, setup
 
-package_name = 'safety_node2'
+package_name = 'pursuit'
 
 setup(
     name=package_name,
