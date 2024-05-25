@@ -34,10 +34,13 @@ def generate_launch_description():
         parameters=[
             {'velocity': 1.0},
             {'lookahead_distance': 1.0}
-            ]
+            ],
+        remappings=[
+            ("/nav", "/drive")
+        ]
     )
     
-    ld.add_action(import_launch)
+    #ld.add_action(import_launch)
     ld.add_action(pursuit)
     
     return ld
