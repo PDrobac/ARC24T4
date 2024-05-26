@@ -3,6 +3,7 @@ import math
 import rclpy
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+import matplotlib.pyplot as plt
 
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
@@ -13,20 +14,21 @@ from visualization_msgs.msg import Marker
 from ackermann_msgs.msg import AckermannDriveStamped
 
 class Pursuit(Node):
-    #########################
-    # all lines and sections marked with TODO might need adjustments, the rest should be good to go
-    #########################
     def __init__(self):
         super().__init__('pursuit')
         # Parameters
 
-        self.lookahead_distance = 0.7 # TODO maybe make reconfigurable via rqt_reconfigure
-        self.velocity = 1.0 # TODO maybe make reconfigurable via rqt_reconfigure
+        self.lookahead_distance = 0.7
+        self.velocity = 1.0
         self.waypoint_index = 0 
-        self.nlog = 1000 # TODO maybe find better timestep value for logging current position
+        self.nlog = 100
         self.cnt = 0
 
         self.path = []
+        self.p_x = []
+        self.p_y = []
+        self.g_x = []
+        self.g_y = []
 
         # Publishers
         self.drive_publisher = self.create_publisher(AckermannDriveStamped, '/drive', 10)
@@ -75,7 +77,6 @@ class Pursuit(Node):
         self.drive_publisher.publish(drive_msg)
 
     def publish_goalpoint(self, marker_x, marker_y):
-        # TODO might have issues
         marker = Marker()
         marker.header.frame_id = "map"
         marker.header.stamp = self.get_clock().now().to_msg()
@@ -110,13 +111,15 @@ class Pursuit(Node):
 
     def path_callback(self, path_msg: Path):
         self.path = path_msg.poses
+        for waypoint in self.path:
+            self.p_x.append(waypoint.pose.position.x)
+            self.p_y.append(waypoint.pose.position.y)
 
     def odom_callback(self, odom_msg: Odometry):
         # Helper variables
         position = odom_msg.pose.pose.position
         furthest_distance = 0.01
         
-        # TODO define type, Pose placeholder
         furthest_waypoint = PoseStamped()
         visible_waypoints = []
 
@@ -134,6 +137,7 @@ class Pursuit(Node):
         point1 = np.array([furthest_waypoint.pose.position.x, furthest_waypoint.pose.position.y, furthest_waypoint.pose.position.z])
 
         if point1[0] != 0 or point1[1] != 0:
+            print("Path found!")
             point2 = np.array([position.x, position.y, position.z])
             distance = self.distance_orthogonal_to_orientation(point1, point2, orientation)
             steering_angle = 2 * distance / (furthest_distance**2)
@@ -143,6 +147,8 @@ class Pursuit(Node):
             if self.cnt >= self.nlog:
                 self.odom_publisher.publish(odom_msg)
                 self.cnt = 0
+                self.g_x.append(position.x)
+                self.g_y.append(position.y)
 
             # Publish goalpoint marker
             self.publish_goalpoint(furthest_waypoint.pose.position.x, furthest_waypoint.pose.position.y)
@@ -151,6 +157,26 @@ class Pursuit(Node):
             self.publish_drive(steering_angle, self.velocity)
         else:
             self.publish_drive(0.0, 0.0)
+            print("Waiting for path...")
+            if self.cnt != 0:
+                # Create the plot
+                plt.figure()
+                plt.plot(self.p_x, self.p_y, 'go-', label='Path')
+                plt.plot(self.g_x, self.g_y, 'ro-', label='Pose')
+
+                # Add labels, title, and grid
+                plt.xlabel('X Coordinate')
+                plt.ylabel('Y Coordinate')
+                plt.title('Plot of Path and Pose')
+                plt.grid(True)
+                plt.legend()
+
+                # Save the plot to a file
+                plt.savefig('path_plot.png')
+
+                # Show the plot
+                plt.show()
+                self.cnt = 0.0
 
 def main(args=None):
     rclpy.init(args=args)
