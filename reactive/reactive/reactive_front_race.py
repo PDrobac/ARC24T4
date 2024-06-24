@@ -58,11 +58,11 @@ class Reactive(Node):
     def publish_scan(self, scan_msg: LaserScan, masked_out_ranges: list):
         new_scan_msg = deepcopy(scan_msg)
         new_scan_msg.ranges = masked_out_ranges
-        for i, distance in enumerate(scan_msg.ranges):
-            if distance != masked_out_ranges[i]:
-                new_scan_msg.intensities.append(0.0)
-            else:
-                new_scan_msg.intensities.append(1.0)
+        # for i, distance in enumerate(scan_msg.ranges):
+        #     if distance != masked_out_ranges[i]:
+        #         new_scan_msg.intensities.append(0.0)
+        #     else:
+        #         new_scan_msg.intensities.append(1.0)
 
         self.scan_pub.publish(new_scan_msg)
 
@@ -96,66 +96,45 @@ class Reactive(Node):
         #find disparities
         disparity_TH = 0.2      # I hope its in meters
         car_safety_bbl = 0.3    # I really hope its meters
-        
-        forbidden_idx = []
-        #########################
-        points = self.scan_to_points(ranges, scan_msg.angle_min, scan_msg.angle_increment)
 
-        if self.previous_scan is not None:
-            forbidden_idx.append(self.detect_dynamic_obstacles(points, self.previous_scan))
-
-        self.previous_scan = points
-        #########################
         for idx, rng in enumerate(ranges):
             #if idx in forbidden_idx:
             #    continue
-            indexes_filtered = []
+            ranges_filtered = []
             
-            # to the right
-            if idx < len(ranges)-1: #gives error for the last element
-                if (ranges[idx+1] - ranges[idx])>disparity_TH :  #checkes for disparities
-                    angle = 2 * math.asin((car_safety_bbl/2)/max(rng, car_safety_bbl/2))   #calculates the angle for the safety bubble based on distance
-                    
-                    mask_N = math.ceil(angle / scan_msg.angle_increment)    #calculates number of laser samples
-                    
-                    for i in range(idx, min(len(ranges)-1, idx + mask_N)):  #decreases the range to rng
-                        if masked_out_ranges[i] > rng:
-                            masked_out_ranges[i] = rng
-                    if masked_out_ranges[min(len(ranges)-1, idx + mask_N + 1)] > rng:
-                        indexes_filtered.append(min(len(ranges)-1, idx + mask_N + 1))
+            if idx < len(ranges)-1 and idx > 0: #gives error for the last element
+                angle = 2 * math.asin((car_safety_bbl/2)/max(rng, car_safety_bbl/2))   #calculates the angle for the safety bubble based on distance
+                
+                mask_N = math.ceil(angle / scan_msg.angle_increment)    #calculates number of laser samples
+                
+                for i in range(max(0, idx - mask_N), min(len(ranges)-1, idx + mask_N)):  #decreases the range to rng
+                    if masked_out_ranges[i] > rng:
+                        masked_out_ranges[i] = rng
                         
-            # to the left
-            if idx > 0: #gives error for first element
-                if (ranges[idx-1] - ranges[idx])>disparity_TH :
-                    angle = 2 * math.asin((car_safety_bbl/2)/max(rng, car_safety_bbl/2))
-                    
-                    mask_N = math.ceil(angle / scan_msg.angle_increment)
-                    
-                    for i in range(max(0, idx - mask_N), idx):
-                        if masked_out_ranges[i] > rng:
-                            masked_out_ranges[i] = rng
-                    if masked_out_ranges[max(0, idx - mask_N - 1)] > rng:
-                        indexes_filtered.append(max(0, idx - mask_N - 1))
-        
-        ranges_filtered = []
-        limit = 220
-        for i in range(len(ranges[limit:-limit])):
-            #if (limit + i) in forbidden_idx:
-            #    masked_out_ranges[limit + i] = ranges[limit + i]
-            if ranges[limit + i] == masked_out_ranges[limit + i] and (masked_out_ranges[limit + i] != masked_out_ranges[limit - 1 + i]
-                                                                      or masked_out_ranges[limit + i] != masked_out_ranges[limit + 1 + i]):
-                ranges_filtered.append(masked_out_ranges[limit + i])
+        for idx, rng in enumerate(masked_out_ranges):
+            if idx == 0:
+                continue
+            angle = scan_msg.angle_min + scan_msg.angle_increment*idx
+            # masked_out_ranges[idx] *= np.cos(angle/2)+1
+            if (masked_out_ranges[idx-1] - masked_out_ranges[idx]) > disparity_TH:
+                ranges_filtered.append(masked_out_ranges[idx-1])
+            if (masked_out_ranges[idx] - masked_out_ranges[idx-1]) > disparity_TH:
+                ranges_filtered.append(masked_out_ranges[idx])
+            else:
+                ranges_filtered.append(0.0)
                         
-        max_masked_out = max(ranges_filtered) #find max value
+        if len(ranges_filtered) == 0:
+            ranges_filtered.append(max(masked_out_ranges))
+        max_masked_out = max(ranges_filtered[200:-200]) #find max value
         idx_direction = masked_out_ranges.index(max_masked_out)
                         
         steering_angle = 0.8*(scan_msg.angle_min + (idx_direction/(len(masked_out_ranges)-1))*(scan_msg.angle_max - scan_msg.angle_min)) #go in direction of max value
         front_distance = ranges[len(ranges) // 2]
-        #print(steering_angle)
+        #self.get_logger().info(str(front_distance))
 
         speed = front_distance * self.get_parameter('max_velocity').get_parameter_value().double_value / 10
         msg_print = "Chosen speed:" + str(speed) + " angle:" + str(steering_angle)
-        self.get_logger().info(msg_print)
+        #self.get_logger().info(msg_print)
         
         self.publish_drive(steering_angle, speed)
         self.publish_marker(steering_angle, speed)

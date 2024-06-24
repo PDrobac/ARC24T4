@@ -26,7 +26,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "reactive = reactive.reactive:main"
+            "reactive = reactive.reactive:main",
+            "reactive_front = reactive.reactive_front_race:main"
         ],
     },
 )
